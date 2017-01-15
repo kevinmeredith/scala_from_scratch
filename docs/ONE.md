@@ -1,11 +1,10 @@
 # Scala From Scratch 
 
-## Intro to Scala
-
-### Agenda
+## Agenda
 
 * REPL
-* `var` versus `val`
+  * `sbt`
+* `var`, `val` and `lazy val`
 * Class
 * Abstract Class
 * Trait
@@ -19,19 +18,38 @@
 * Partial Application
 * Bread and Butter List Functions
 * Try, Option, and Either
+* Safely Calling Legacy Java Code
 * Programming with Types
+* Algebraic Data Types
+* Total versus Partial Functions
+* Referential Transparency
 
-### REPL
+## REPL
 
 * Read-Eval-Print-Loop
 * Very useful for understanding code
+* Scala Fiddle - https://scalafiddle.io/
 
-### `var` versus `val`
+## `sbt`
+
+* Primary build tool for developing Scala projects
+* Install it - http://www.scala-sbt.org/download.html
+* Create `build.sbt` file:
+
+```
+$cat build.sbt
+scalaVersion := "2.12.1"
+```
+
+* Run the REPL via `sbt console`
+
+## `var` versus `val`
 
 * `var` - mutable reference
 * `val` - immutable reference
-* Says nothing about the referenced value
-  * could be mutable or immutable
+* Says nothing about the referenced value, i.e. the data structure
+  to which the reference points
+  * mutable or immutable
 
 ```
 var x = 42
@@ -41,7 +59,59 @@ val y = 66
 y = 42 // illegal
 ```
 
-### Class
+## `lazy val`
+
+* Lazily instantiated `val`
+
+```
+class A {
+     val x = { println("defining x"); 42 }
+     lazy val y = { println("defining y"); 66 }
+}
+
+scala> new A
+defining x
+res9: A = A@783df621
+
+scala> res9.y
+defining y
+res10: Int = 66
+
+scala> res9.y
+res11: Int = 66
+```
+
+## By-Value versus By-Name Parameter
+
+* By-Value - evaluated eagerly and only once
+
+```
+def g(x: Int): Int = 42
+
+scala> g( { println("hello"); 1} )
+hello
+res15: Int = 42
+```
+
+* By-Name - evaluated on-demand and each time
+
+```
+def f(x: => Int): Int = x + x
+
+scala> f( { println("hello"); 1} )
+hello
+hello
+res13: Int = 2
+```
+
+```
+def foo(x: => Int): Int = 42
+
+scala> foo( { println("hello"); 1} )
+res16: Int = 42
+```
+
+## Class
 
 * "A class is a blueprint for objects. Once you define a class, 
    you can create objects from the class blueprint with the 
@@ -138,7 +208,7 @@ x.increment.decrement
 * To make it private, remove `val` 
 * Observe that there's no `()` appended to each method's name
 
-### Abstract Class
+## Abstract Class
 
 * Cannot be directly instantiated
 * Has constructor parameters
@@ -151,7 +221,7 @@ abstract class GraphicObject() {
 }
 ```
 
-### Trait
+## Trait
 
 * Similar to a Java `Interface`, but it can:
   * Define fields and implement methods
@@ -171,15 +241,15 @@ trait HasMouth {
 
 ```
 class Human extends HasBrain with HasMouth {
-  override def intelligentQuote = "I think, therefore I am."
+  def intelligentQuote = "I think, therefore I am."
 
-  override def talk = "blah blah blah"
+  def talk = "blah blah blah"
 }
 
 class Dog extends HasBrain with HasMouth {
-  override def intelligentQuote = "my owner is home - time to eat!"
+  def intelligentQuote = "my owner is home - time to eat!"
 
-  override def talk = "woof"
+  def talk = "woof"
 }
 ```
 
@@ -190,7 +260,7 @@ class Dog extends HasBrain with HasMouth {
   If you want to inherit from it in Java code, use an abstract class" (Prog in Scala, 3rd edition).
 
 
-### Object
+## Object
 
 * Unlike Java, Scala does not have `static` members.
 * "Sometimes, you want to have variables that are common to all objects" 
@@ -218,7 +288,7 @@ object MathUtility {
 
 * A `companion` object shares the same name as a class in the same source
 
-#### Person.scala
+### Person.scala
 
 ```
 object Person {
@@ -227,22 +297,27 @@ object Person {
 }
 class Person(first: String, last: String) 
 ```
-* Additionally, a `companion` object has access to its companion 
-  class's private fields, and vice-versa
+* Additionally, a class has access to the private fields of its`companion` 
+  object
 
 ```
 object A {
- private val objX = 42
+  private val x = 42
 }
 class A {
- private val classX = 66
+  def showX: Int = A.x
 }
+```
+
+```
+scala> (new A).showX
+res4: Int = 42
 ```
  
 * "If you are a Java programmer, one way to think of singleton objects is
    as the home for any static methods you might have written in Java" (Prog in Scala).
 
-### How to Run a Program
+## How to Run a Program
 
 ```
 object Foo {
@@ -282,7 +357,7 @@ scala> F.x
 res2: Int = 42
 ```
 
-### Case Classes
+## Case Classes
 
 * Immutable by default
 * Decomposable through pattern matching
@@ -320,6 +395,11 @@ public class Person {
     return result;
   }
 
+  @Override 
+  public int hashCode(Object o) {
+    // see Effective Java's Item 9
+  }
+
   public String getName() {
     return this.name;
   }
@@ -329,7 +409,7 @@ public class Person {
   }
 ```
 
-#### Immutable by Default
+### Immutable by Default
 
 ```
 scala> case class F(a: Int) {
@@ -340,7 +420,7 @@ scala> case class F(a: Int) {
            ^
 ```
 
-#### Decomposable through Pattern Matching
+### Decomposable through Pattern Matching
 
 ```
 def namePlusAge(p: Person): String = p match {
@@ -351,21 +431,39 @@ scala>namePlusAge( Person("Jane", 33) )
 res4: String = Jane33
 ```
 
-### Equality
+## Equality
 
 * Use `==` to compare value (stack) or reference types (heap)
 * `==` "routes to .equals, except that it treats nulls properly" (http://stackoverflow.com/a/7681243/409976)
-* To compare objects via "reference equality," use `eq` (rarely used)
+  * `==` is [final](http://www.scala-lang.org/api/2.11.8/index.html#scala.Any@==(x$1:Any):Boolean
 
-#### Value Types
+```
+case class A(x: Int)
+
+val x: A = null
+
+scala> null.equals( A(42) )
+java.lang.NullPointerException
+  ... 39 elided
+
+scala> null == A(42)
+res5: Boolean = false
+```
+
+* To compare objects via "reference equality," use `eq` (I can't recall ever using it)
+
+### Value Types
 
 * scala.Double, scala.Float, scala.Long, scala.Int, scala.Char, scala.Short, and scala.Byte are the numeric value types.
 * scala.Unit and scala.Boolean
   -http://www.scala-lang.org/api/2.12.x/scala/AnyVal.html
 
-#### Reference Types
+### Reference Types
 
-* objects that are `new`'d, i.e. stored on the heap
+* "The other subclass of the root class Any is class AnyRef. This is the base
+   class of all reference classes in Scala. ... on the Java
+   platform AnyRef is in fact just an alias for class java.lang.Object."
+   - Programming in Scala, 3rd Edition
 
 #### `==` Examples
 
@@ -378,9 +476,9 @@ case class Person(id: Long, name: String)
 Person(42, "Joe") == Person(42, "Joe") // outputs true
 ```
 
-### Collections
+## Collections
 
-#### List - `List[A]`
+### List - `List[A]`
 
 * Linked List (https://en.wikipedia.org/wiki/Linked_list)
 
@@ -394,7 +492,7 @@ Person(42, "Joe") == Person(42, "Joe") // outputs true
 List[Int](2,3) :+ 4 // append
 ```
 
-#### Set - `Set[A]`
+### Set - `Set[A]`
 
 * Collection of elements that contains no duplicates
 * Calling `Set(1,2,3)` in Scala will, by default, use a `HashSet`.
@@ -405,7 +503,7 @@ List[Int](2,3) :+ 4 // append
 Set[Int](1,2,3)
 ```
 
-#### Map - `Map[K, V]`
+### Map - `Map[K, V]`
 
 * Consists of key-value pairs
 
@@ -415,7 +513,7 @@ map.get(1)  // returns Some("hello")
 map.get(42) // returns None
 ```
 
-### Recursion
+## Recursion
 
 * "Recursion occurs when a thing is defined in terms of itself or of its type."
   * https://en.wikipedia.org/wiki/Recursion
@@ -460,7 +558,7 @@ public static int factorial(int x) {
 * We cannot reason about the Java `factorial` method in the same way
 * It's necessary to keep track of state, i.e. `start`
 
-### Currying
+## Currying
 
 * "technique of translating the evaluation of a function that takes multiple arguments ... 
    into evaluating a sequence of functions, each with a single argument."
@@ -485,7 +583,7 @@ res13: Int = 47
 
 ```
 
-### Partial Application
+## Partial Application
 
 ```
 def add2(x: Int, y: Int): Int = x + y
@@ -583,7 +681,7 @@ scala> find(List(1,2,3), { x: Int => x == 42 } )
 res6: Option[Int] = None
 ```
 
-### Try, Option and Either
+## Try, Option and Either
 
 * `Try` is a data structure that encapsulates the `Success`
    and `Failure`, i.e. threw a non-fatal exceptionm cases.
@@ -678,7 +776,37 @@ scala> divPositiveByN(10, 10)
 res11: Either[DivError,Int] = Right(1)
 ```
 
-### Programming with Types
+## Safely Calling Legacy Java Code
+
+* [Option#apply](http://www.scala-lang.org/api/2.11.8/index.html#scala.Option$@apply[A](x:A):Option[A]) will return `None` if it receives a `null` input
+
+```
+import scala.util.{Try, Success, Failure}
+
+sealed trait JavaResult
+case class Thrown(t: Throwable) extends JavaResult
+case object NullResult          extends JavaResult
+
+// Recall that `=>` is a by-name (on-demand) parameter
+def javaResult[A](x: => A): Either[JavaResult, A] = Try { Option[A] { x } } match {
+     case Success(Some(value)) => Right( value )
+     case Success(None)        => Left( NullResult )
+     case Failure(t)           => Left( Thrown( t) ) 
+}
+```
+
+```
+scala> javaResult( throw new RuntimeException("!") )
+res6: Either[JavaResult,Nothing] = Left(Thrown(java.lang.RuntimeException: !))
+
+scala> javaResult( null )
+res7: Either[JavaResult,Null] = Left(NullResult)
+
+scala> javaResult( 42 )
+res8: Either[JavaResult,Int] = Right(42)
+```
+
+## Programming with Types
 
 * Benefits
   * Detecting Errors
@@ -713,6 +841,162 @@ trait UserRepository {
 }
 ```
 
+## Algebraic Data Types (ADT)
+
+* Useful, type-safe way to represent data structures
+
+### Sum Type
+
+```
+sealed trait Answer
+case object Yes extends Answer
+case object No  extends Answer
+```
+
+The `Answer` type consists of `Yes` + `No`
+
+- "Functional and Reactive Domain Modeling" (Ghosh)
+
+### Product Type
+
+```
+sealed trait Parent
+case class Girl(name: String, age: Int) extends Parent
+case class Boy(name: String, age: Int)  extends Parent
+```
+
+`Girl` and `Boy` consists of `String` and `Int`.
+
+- "Functional and Reactive Domain Modeling" (Ghosh)
+
+#### Uses
+
+* Recall `Try`, `Either` and `Option`
+
+##### States
+
+```
+sealed trait DoorState
+case object Open   extends DoorState
+case object Closed extends DoorState
+```
+
+- https://github.com/kevinmeredith/error-handling-with-types/blob/master/docs/Enumeration.scala
+
+* Poor Alternatives (Int or String) that fail to properly capture the domain
+
+```
+// Range of Int's
+scala> Int.MinValue
+res1: Int = -2147483648
+
+scala> Int.MaxValue
+res2: Int = 2147483647
+  
+// Range of String's
+"OPEN"
+"O"
+"C"
+""
+"OPEN"
+```
+
+##### Error Handling
+
+```
+// Library that sends tweets on behalf of author
+sealed trait AppError
+case class ExpectedFourCommandLineArgs(args: Array[String]) extends AppError
+case class InvalidUserCredentials(user: String)             extends AppError
+```
+
+## Total versus Partial Functions
+
+* Total:   Every input has an output
+
+```
+def identity[A](x: A): A = x
+```
+
+* Partial: Not every input has an output
+
+```
+def head[A](xs: List[A]): A = xs.head
+
+scala> head( List.empty[Int] )
+java.util.NoSuchElementException: head of empty list
+```
+
+## Referential Transparency
+
+### Definition
+
+* “An expression e is Referentially Transparent if, for all programs in p, all 
+   occurrences in p can be replaced by the result of evaluating e without affecting 
+   the meaning of p” 
+   - Functional Programming in Scala, Bjarnason & Chiusano
+
+* Evaluation by Substitution
+
+```
+5 + (10 * 2) - 3 
+5 +   20     - 3
+25           - 3
+22
+5 + (10 * 2) - 3  == 22
+```
+
+### RT Function
+
+```
+def add1(x: Int): Int = x + 1
+add1( add1( 5 ) ) 
+add1( 6 )
+7
+add1( add( 5 ) ) == 7
+```
+
+### Exceptions Violate RT
+
+```
+// throw exception within a try/catch
+def f: Int = {
+  try {
+    throw new Exception("!")
+  }
+  catch {
+    case _ => 43
+  }
+}
+
+scala> f
+res1: Int = 43
+```
+
+```
+// throw outside of a try/catch
+def g: Int = {
+  throw new Exception("!")
+  try {
+    42 + 42
+  }
+  catch {
+    case _ => 666
+  }
+}
+
+scala> g
+java.lang.Exception: !
+```
+
+* code source - - Functional Programming in Scala, Bjarnason & Chiusano
+* Programmers Stack Exchange question and answer on RT - http://softwareengineering.stackexchange.com/questions/223329/side-effects-breaking-referential-transparency
+
 ## References
 
 * Programming in Scala, 3rd Edition; (Odersky, Spoon, and Venners)
+  * http://www.artima.com/shop/programming_in_scala_3ed
+* Functional and Reactive Domain Modeling (Ghosh)
+  * https://www.manning.com/books/functional-and-reactive-domain-modeling
+* Functional Programming in Scala (Bjarnason & Chiusano)
+  * https://www.manning.com/books/functional-programming-in-scala
