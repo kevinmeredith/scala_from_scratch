@@ -223,9 +223,9 @@ abstract class GraphicObject() {
 
 ## Trait
 
-* Similar to a Java `Interface`, but it can:
-  * Define fields and implement methods
-  * "Unlike class inheritance, in which each class must inherit from just
+* In Scala 2.12, it [compiles](http://scala-lang.org/news/2.12.0#traits-compile-to-interfaces) to a Java8 Interface.
+* Define fields and implement methods
+* "Unlike class inheritance, in which each class must inherit from just
     one superclass, a class can mix in any number of traits" (Prog in Scala, 3rd edition).
 * No parameters allowed
 
