@@ -684,7 +684,7 @@ res6: Option[Int] = None
 ## Try, Option and Either
 
 * `Try` is a data structure that encapsulates the `Success`
-   and `Failure`, i.e. threw a non-fatal exceptionm cases.
+   and `Failure`, i.e. threw a non-fatal exception cases.
 
 ```
 sealed trait Try[+A]
