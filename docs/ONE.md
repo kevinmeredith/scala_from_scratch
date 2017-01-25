@@ -2,20 +2,34 @@
 
 ## Agenda
 
+### I
+
 * REPL
-  * `sbt`
-* `var`, `val` and `lazy val`
+* `sbt`
+* `var` versus `val`
+* `lazy val`
+* `if` Statement is an Expression
+* Imports
+* By-Value versus By-Name Parameter
 * Class
 * Abstract Class
 * Trait
 * Object
 * How to Run a Program
+
+### II
+
 * Case Class
 * Equality
 * Collections
 * Recursion
 * Currying
 * Partial Application
+* Higher Order Function
+* Partial Application
+
+### III
+
 * Bread and Butter List Functions
 * Try, Option, and Either
 * Safely Calling Legacy Java Code
@@ -23,11 +37,19 @@
 * Algebraic Data Types
 * Total versus Partial Functions
 * Referential Transparency
+* Separating Pure Code from Impure Code
+
+### IV
+
+* Testing 
+* Property-based Testing
+
+## I
 
 ## REPL
 
 * Read-Eval-Print-Loop
-* Very useful for understanding code
+* Useful for understanding code
 * Scala Fiddle - https://scalafiddle.io/
 
 ## `sbt`
@@ -45,7 +67,7 @@ scalaVersion := "2.12.1"
 
 ## `var` versus `val`
 
-* `var` - mutable reference
+* `var` - mutable reference 
 * `val` - immutable reference
 * Says nothing about the referenced value, i.e. the data structure
   to which the reference points
@@ -79,6 +101,42 @@ res10: Int = 66
 
 scala> res9.y
 res11: Int = 66
+```
+
+## If Statement is an Expression
+
+* Idiomatic in Scala to treat `if/else` as expressions, not simply statements
+
+```
+final int result;
+if(true) {
+  result = 42;
+}
+else {
+  result = 66;
+}
+return result;
+```
+
+```
+scala> val result = if (true) 42 else 66
+result: Int = 42
+```
+
+* In Java, you could use its ternary operator
+
+```
+final int result = (true) ? 42 : 66;
+```
+
+## Imports
+
+* Allows single, wildcard, or multiple imports
+
+```
+import scala.util.Try
+import scala.util._ 
+import scala.util.{Try, Success, Failure}
 ```
 
 ## By-Value versus By-Name Parameter
@@ -215,9 +273,14 @@ x.increment.decrement
 * Can define fields and methods
 
 ```
-// http://docs.oracle.com/javase/tutorial/java/IandI/abstract.html
-abstract class GraphicObject() {
-  def draw(): Unit
+abstract class Animal(age: Int) {
+  def speak: String
+}
+class Cat(age: Int) extends Animal(age) {
+  def speak: String = "meow"
+}
+class Dog(age: Int) extends Animal(age) {
+  def speak: String = "woof"
 }
 ```
 
@@ -228,6 +291,7 @@ abstract class GraphicObject() {
 * "Unlike class inheritance, in which each class must inherit from just
     one superclass, a class can mix in any number of traits" (Prog in Scala, 3rd edition).
 * No parameters allowed
+* Supports multiple inheritance
 
 ```
 trait HasBrain {
@@ -341,11 +405,10 @@ object Foo extends App {
   `App`. (http://www.scala-lang.org/api/2.12.x/scala/App.html)
 
 ```
-scala> object F extends App {
-     |   val x = 42
-     |   println("hi")
-     | }
-defined object F
+object F extends App {
+  val x = 42
+  println("hi")
+}
 
 scala> F.x
 res0: Int = 0
@@ -357,7 +420,9 @@ scala> F.x
 res2: Int = 42
 ```
 
-## Case Classes
+## II
+
+## Case Class
 
 * Immutable by default
 * Decomposable through pattern matching
@@ -457,6 +522,7 @@ res5: Boolean = false
 * scala.Double, scala.Float, scala.Long, scala.Int, scala.Char, scala.Short, and scala.Byte are the numeric value types.
 * scala.Unit and scala.Boolean
   -http://www.scala-lang.org/api/2.12.x/scala/AnyVal.html
+* Stored on the stack
 
 ### Reference Types
 
@@ -464,6 +530,7 @@ res5: Boolean = false
    class of all reference classes in Scala. ... on the Java
    platform AnyRef is in fact just an alias for class java.lang.Object."
    - Programming in Scala, 3rd Edition
+ * Stored on the heap
 
 #### `==` Examples
 
@@ -482,7 +549,7 @@ Person(42, "Joe") == Person(42, "Joe") // outputs true
 
 * Linked List (https://en.wikipedia.org/wiki/Linked_list)
 
-- [1] --> [2] --> [3] --> Nil (termination of list)
+- 1 --> 2 --> 3 --> Nil (termination of list)
 
 * The `bread` in bread and butter of Scala and Functional Programming
 * Bunch of elements with constant prepend, i.e. add to head, but linear append, add to tail
@@ -597,6 +664,29 @@ res14: Int = 20
 scala> partiallyApplied(5)
 res15: Int = 15
 ```
+
+## Higher Order Function 
+
+* Function that accepts or returns one or more function arguments
+
+```
+def f(x: Int, g: Int => Int): Int = g(x)
+
+scala> f(10, {x => x + 5} )
+res0: Int = 15
+```
+
+```
+def add2(x: Int)(y: Int): Int = x + y 
+
+scala> add2(10)(_)
+res5: Int => Int = $$Lambda$1106/1242050247@6a03d532
+
+scala> res5(7)
+res6: Int = 17
+```
+
+## III
 
 ### Bread and Butter List Functions
 
@@ -817,7 +907,6 @@ res8: Either[JavaResult,Int] = Right(42)
   * can be used for marking methods that remain to be implemented.
     http://www.scala-lang.org/api/2.11.8/index.html#scala.Predef$@???:Nothing
 
-
 ```
 case class User(id: Long)
 
@@ -865,7 +954,8 @@ case class Girl(name: String, age: Int) extends Parent
 case class Boy(name: String, age: Int)  extends Parent
 ```
 
-`Girl` and `Boy` consists of `String` and `Int`.
+* `Parent` represents a Sum of Products
+* `Girl` and `Boy` consists of `String` and `Int`.
 
 - "Functional and Reactive Domain Modeling" (Ghosh)
 
@@ -989,8 +1079,74 @@ scala> g
 java.lang.Exception: !
 ```
 
-* code source - - Functional Programming in Scala, Bjarnason & Chiusano
+* code source - Functional Programming in Scala, Bjarnason & Chiusano
 * Programmers Stack Exchange question and answer on RT - http://softwareengineering.stackexchange.com/questions/223329/side-effects-breaking-referential-transparency
+
+## Separating Pure Code from Impure Code
+
+* `Pure` means Referentially Transparent
+  * Reason about code using the above 'evaluation by substituion' example
+* `Impure`, due to side effects and thrown exceptions, is not pure
+  * Scala's ecosystem has libraries for writing pure code, but impure 
+    functions are common
+* Nonetheless, separating pure from impure code results in easier to understand
+  and test code, I argue
+  * In my experience, my bugs show up in side-effecting code more so than pure code
+
+### Mixing Pure and Impure Code
+
+```
+val absoluteValuePlus1: Unit = {
+   val x: String = readLine
+   val y: Int      = Math.abs(x.toInt) + 1
+   println(y)
+}
+```
+
+* Problems?
+  * Partial
+
+### Re-factored for Improvement
+
+```
+import scala.util.{Try, Success, Failure}
+
+def readInt(x: String): Option[Int] = {
+  Try { x.toInt } match {
+    case Success(num) => Some(num)
+    case Failure(err) => None
+}
+    
+def absPlus1(x: Int): Int = 
+  Math.abs(x) + 1
+```
+
+```
+def absoluteValuePlus1: Unit = {
+  val x = readLine
+  readInt(x) match {
+   case Some(num) => 
+       println("success: " + absPlus1(num))
+   case None           => 
+       println("did not receive a number")
+}  
+```
+
+* Benefits?
+  * `absPlus1` and `readInt` have become easier to test
+  * each function is total
+
+## IV
+
+## Testing
+
+* [ScalaTest](http://www.scalatest.org/) and [Specs2](http://etorreborre.github.io/specs2/)
+
+## Property-Based Testing
+  
+* Verify that code saistifies properties
+
+
 
 ## References
 
