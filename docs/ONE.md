@@ -144,11 +144,11 @@ import scala.util.{Try, Success, Failure}
 * By-Value - evaluated eagerly and only once
 
 ```
-def g(x: Int): Int = 42
+def double(x: Int): Int = x + x
 
-scala> g( { println("hello"); 1} )
-hello
-res15: Int = 42
+scala> double( { println("hi"); 1 } )
+hi
+res1: Int = 2
 ```
 
 * By-Name - evaluated on-demand and each time
