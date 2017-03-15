@@ -1,8 +1,8 @@
 package net
 
-abstract class MyList[+A]
+sealed abstract class MyList[+A]
 case class Cons[+A](elem: A, rest: MyList[A]) extends MyList[A]
-case object Empty                           extends MyList[Nothing]
+case object Empty                             extends MyList[Nothing]
 
 object MyList {
 
