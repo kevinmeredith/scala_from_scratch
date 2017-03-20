@@ -1,27 +1,36 @@
 package net
 
-import org.scalacheck.Gen
-import Gen.{oneOf, const, sized, resize, frequency, posNum}
+import org.scalacheck.Gen 
+import Gen.const          // A          => Gen[A]
+import Gen.choose         // (Int, Int) => Gen[Int]*
+import Gen.posNum         // Gen[Int] 
 
 object MySpec {
 
-	val genListInt: Gen[MyList[Int]] = Gen.resize(1000, genList( posNum[Int] ) )
+	// Create a generator to produce a random `MyList[Int]`
+	val genListInt: Gen[MyList[Int]] = for {
+		depth <- choose(0, 25)                // choose a max depth, i.e. # of Cons
+		list  <- genList(posNum[Int], depth)  // pass the random 'depth' int to `genList`
+	} yield list
 
-	private def genList[A](gen: Gen[A]): Gen[MyList[A]] = Gen.sized { n => 
-		println(n)
-		if(n <= 0) {
+	// Given a generator for type `A`, i.e. in `MyList[A]` and a max depth,
+	// output a `MyList[A]` generator.
+	private def genList[A](gen: Gen[A], depth: Int): Gen[MyList[A]] = {
+		if(depth <= 0) {        // terminate the recursive data structure with a `Empty`
 			genEmpty
 		}
-		else {
-			frequency( (1, genEmpty), (20, genCons(gen)) )
+		else {                  // Otherwise, use Cons to build up the generated `MyList[A]`
+			genCons(gen, depth)
 		}
 	}
 
+	// Empty case, i.e. termination
 	private val genEmpty: Gen[MyList[Nothing]] = Gen.const(Empty)
 
-	private def genCons[A](gen: Gen[A]): Gen[MyList[A]] = 
+	// Cons case, i.e. building up the `MyList[A]`
+	private def genCons[A](gen: Gen[A], depth: Int): Gen[MyList[A]] = 
 		for {
-			list <- sized { n => resize(n/2, genList(gen) ) }
+			list <- genList(gen, depth-1)
 			a    <- gen
 		} yield Cons(a, list)
 }
