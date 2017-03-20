@@ -5,9 +5,10 @@ import Gen.{oneOf, const, sized, resize, frequency, posNum}
 
 object MySpec {
 
-	val genListInt: Gen[MyList[Int]] = Gen.resize(100, genList( posNum[Int] ) )
+	val genListInt: Gen[MyList[Int]] = Gen.resize(1000, genList( posNum[Int] ) )
 
 	private def genList[A](gen: Gen[A]): Gen[MyList[A]] = Gen.sized { n => 
+		println(n)
 		if(n <= 0) {
 			genEmpty
 		}
