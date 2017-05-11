@@ -932,9 +932,15 @@ trait UserRepository {
 
 ## Algebraic Data Types (ADT)
 
-* Useful, type-safe way to represent data structures
+* Three (more or less) types that fit into an ADT
+
+* Sum 
+* Product 
+* Enumerated 
 
 ### Sum Type
+
+* (A + B)
 
 ```
 sealed trait Answer
@@ -948,22 +954,41 @@ The `Answer` type consists of `Yes` + `No`
 
 ### Product Type
 
+* (A * B)
+
+```
+case class Person(name: String, age: Int)
+```
+
+### Enumerated Type
+
+```
+case object Acknowledgement
+```
+
+### Examples
+
+* Sum of Product Types
+
 ```
 sealed trait Parent
 case class Girl(name: String, age: Int) extends Parent
 case class Boy(name: String, age: Int)  extends Parent
 ```
 
-* `Parent` represents a Sum of Products
-* `Girl` and `Boy` consists of `String` and `Int`.
+* Sum of Enumerated Types 
 
-- "Functional and Reactive Domain Modeling" (Ghosh)
+```
+sealed trait Answer
+case object Yes extends Answer
+case object No  extends Answer
+```
 
 #### Uses
 
 * Recall `Try`, `Either` and `Option`
 
-##### States
+##### Representation of States
 
 ```
 sealed trait DoorState
@@ -993,10 +1018,12 @@ res2: Int = 2147483647
 
 ##### Error Handling
 
+* Example: command-line application that sends tweets on behalf of author
+  *java -jar SendTweets.jar twitterUser twitterPass twitterMessage
+
 ```
-// Library that sends tweets on behalf of author
 sealed trait AppError
-case class ExpectedFourCommandLineArgs(args: Array[String]) extends AppError
+case class ExpectedThreeCommandLineArgs(args: Array[String]) extends AppError
 case class InvalidUserCredentials(user: String)             extends AppError
 ```
 
